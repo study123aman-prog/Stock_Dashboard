@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body style="font-family: Arial; display: flex; margin: 0;">
+
+<!-- LEFT SIDEBAR -->
+<div style="width: 200px; border-right: 1px solid gray; padding: 15px;">
+    <h3>Companies</h3>
+
+    <div onclick="selectStock('TCS.NS')" style="cursor:pointer;">TCS</div>
+    <div onclick="selectStock('INFY.NS')" style="cursor:pointer;">INFY</div>
+    <div onclick="selectStock('HDFCBANK.NS')" style="cursor:pointer;">HDFCBANK</div>
+    <div onclick="selectStock('LT.NS')" style="cursor:pointer;">LT</div>
+    <div onclick="selectStock('WIPRO.NS')" style="cursor:pointer;">WIPRO</div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div style="flex: 1; padding: 20px;">
+
+    <h2 id="title">TCS.NS</h2>
+
+    <!-- FILTER -->
+    <label>Filter:</label>
+    <select id="days">
+        <option value="30">Last 30 Days</option>
+        <option value="90">Last 90 Days</option>
+    </select>
+
+    <button onclick="loadData()">Load Data</button>
+
+    <h3>Summary</h3>
+    <p id="summary"></p>
+
+    <canvas id="chart" width="600" height="300"></canvas>
+
+    <hr>
+
+    <h3>Top Movers</h3>
+    <p id="movers"></p>
+
+    <hr>
+
+    <!-- CORRELATION -->
+    <h3>Correlation</h3>
+
+    <select id="stock1">
+        <option value="TCS.NS">TCS</option>
+        <option value="INFY.NS">INFY</option>
+        <option value="HDFCBANK.NS">HDFCBANK</option>
+        <option value="LT.NS">LT</option>
+        <option value="WIPRO.NS">WIPRO</option>
+    </select>
+
+    <select id="stock2">
+        <option value="TCS.NS">TCS</option>
+        <option value="INFY.NS">INFY</option>
+        <option value="HDFCBANK.NS">HDFCBANK</option>
+        <option value="LT.NS">LT</option>
+        <option value="WIPRO.NS">WIPRO</option>
+    </select>
+
+    <button onclick="getCorrelation()">Check</button>
+
+    <p id="corr"></p>
+
+</div>
+
+<script>
+let currentStock = "TCS.NS";
+let chart = null;
+
+// SELECT STOCK FROM SIDEBAR
+function selectStock(symbol) {
+    currentStock = symbol;
+    document.getElementById("title").innerText = symbol;
+}
+
+// LOAD DATA
+async function loadData() {
+    try {
+        const days = parseInt(document.getElementById("days").value);
+
+        // FETCH DATA
+        const res = await fetch(`http://127.0.0.1:8000/data/${currentStock}`);
+        let data = await res.json();
+
+        // FILTER LAST N DAYS
+        data = data.slice(-days);
+
+        // FETCH SUMMARY
+        const summaryRes = await fetch(`http://127.0.0.1:8000/summary/${currentStock}`);
+        const summary = await summaryRes.json();
+
+        // DISPLAY SUMMARY
+        document.getElementById("summary").innerHTML = `
+            <b>Avg Price:</b> ${summary["Average Close"]} <br>
+            <b>Volatility:</b> ${summary["Latest Volatility"]} <br>
+            <b>Sentiment:</b> ${summary["Latest Sentiment"]}
+        `;
+
+        // PREPARE CHART DATA
+        const labels = data.map(d => d.Date);
+        const prices = data.map(d => d.Close);
+
+        // DESTROY OLD CHART (IMPORTANT)
+        if (chart) {
+            chart.destroy();
+        }
+
+        // CREATE NEW CHART
+        chart = new Chart(document.getElementById("chart"), {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: currentStock,
+                    data: prices
+                }]
+            }
+        });
+
+        // CALCULATE GAINER / LOSER
+        calculateMovers(data);
+
+    } catch (err) {
+        console.error(err);
+        alert("Error loading data. Check backend.");
+    }
+}
+
+// CORRELATION
+async function getCorrelation() {
+    const s1 = document.getElementById("stock1").value;
+    const s2 = document.getElementById("stock2").value;
+
+    const res = await fetch(`http://127.0.0.1:8000/correlation?symbol1=${s1}&symbol2=${s2}`);
+    const data = await res.json();
+
+    document.getElementById("corr").innerText =
+        `Correlation: ${data.correlation}`;
+}
+
+// TOP GAINER / LOSER
+function calculateMovers(data) {
+    if (data.length < 2) return;
+
+    let change = data[data.length - 1].Close - data[0].Close;
+
+    let text = "";
+
+    if (change > 0) {
+        text = "📈 Gainer: +" + change.toFixed(2);
+    } else {
+        text = "📉 Loser: " + change.toFixed(2);
+    }
+
+    document.getElementById("movers").innerText = text;
+}
+</script>
+
+</body>
+</html>
