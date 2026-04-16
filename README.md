@@ -1,4 +1,4 @@
-# 📊 Stock Dashboard
+#  Stock Dashboard
 
 A full-stack stock analytics dashboard built with FastAPI and JavaScript.
 
