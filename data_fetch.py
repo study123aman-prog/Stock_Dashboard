@@ -5,13 +5,13 @@ import os
 def fetch_stock(symbol="TCS.NS"):
     df = yf.download(symbol, period="6mo")
 
-    # Fix column names
+
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.droplevel(1)
 
     df.reset_index(inplace=True)
 
-    # Save to CSV
+
     file_path = os.path.join("data", f"{symbol}.csv")
     df.to_csv(file_path, index=False)
 
