@@ -6,7 +6,6 @@ import math
 
 app = FastAPI(title="Stock Market API", version="1.0")
 
-# CORS must be added RIGHT AFTER app is created
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
