@@ -18,4 +18,4 @@ A full-stack stock analytics dashboard built with FastAPI and JavaScript.
 
 ```bash
 pip install -r requirements.txt
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
